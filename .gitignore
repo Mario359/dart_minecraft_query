@@ -10,8 +10,4 @@ doc/api/
 
 *.lock
 
-# NBT Files for testing
-*.nbt
-*.dat
-
 **/.DS_Store

@@ -1,5 +1,9 @@
 # Changelog
 
+## q0.1.0
+- Remove: Everything except the ping function and packet reader
+- Change: Replace dart:io with universal_io
+
 ## 0.5.2
 - Add: XBL authentication function
 - Add: Player certificate API

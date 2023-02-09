@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:universal_io/io.dart';
 
 import '../exceptions/ping_exception.dart';
 import '../packet/packet_reader.dart';

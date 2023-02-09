@@ -1,6 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:universal_io/io.dart';
 
 import '../utilities/readers/_byte_writer.dart';
 import 'packet_compression.dart';
