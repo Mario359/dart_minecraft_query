@@ -1,49 +1,51 @@
 import 'package:dart_minecraft/dart_minecraft.dart';
-import 'package:dart_minecraft/dart_nbt.dart';
+import 'package:dart_minecraft/src/packet/packets/response_packet.dart';
 
-Future<int> main() async {
-  /// In this example we'll read content from a NBT File
-  /// which in its root compound has a single NbtString that
-  /// contains a UUID of a player we'll try and get the skin texture from.
-  final nbtReader = NbtReader.fromFile('./example/data.nbt');
+Future<void> main() async {
+  /// Pinging hypixel.net to get the status of the server.
+  /// This will return a [ResponsePacket] object which contains
+  /// all the information about the server.
+  ResponsePacket? pingHypixel;
   try {
-    nbtReader.read();
-  } on NbtFileReadException {
-    print('Failed to read data.nbt');
+    pingHypixel = await ping('mc.hypixel.net', port: 25565);
+  } on PingException catch (error) {
+    /// If the ping failed, we'll print the error message.
+    /// Hypixel may be down for maintenances or rebooting.
+    print('Failed to ping hypixel.net: ${error.message}');
   }
 
-  /// If the file doesn't exist we'll instead use some example data.
-  /// This shows how one would create nbt data using this package.
-  nbtReader.root ??= NbtCompound(
-    name: '',
-    children: [
-      NbtString(
-        name: 'uuid',
-        value: '069a79f444e94726a5befca90e38aaf5', // This is Notch's UUID.
-      ),
-    ],
-  );
+  /// If the ping was successful, we'll print the the server informations.
+  if (pingHypixel != null || pingHypixel!.response != null) {
+    /// MOTD is the message that is displayed when register the server
+    /// in your multiplayer menu.
+    /// It includes the two lines of text
+    /// It includes color codes, which are represented by the §x symbol.
+    /// You may need to replace the color codes symbol with Regex
+    print('Hypixel MOTD:\n${pingHypixel.response!.description.description}');
 
-  final nbtString = nbtReader.root!.first as NbtString?;
+    /// Player sample is a small list of players that are currently online.
+    /// It is the component that displays when you hover over the
+    /// ping status in the multiplayer menu.
+    /// Hypixel doesn't show the player sample, it will be empty.
+    /// Some servers manipulate the player sample to display other data,
+    /// so it is not a good way to show some players that are online.
+    print(
+        'Hypixel Player Sample: ${pingHypixel.response!.players.sample} (empty because Hypixel doesn\'t show the player sample)');
 
-  /// Now with our UUID, we can get the profile of given UUID.
-  /// This will allow us to get their profile, which contains the
-  /// textures.
-  if (nbtString == null) return -1;
-  final profile = await getProfile(nbtString.value);
-  final skins = profile.getSkins;
-  if (skins.isEmpty) return -1;
+    /// Server version is the version of the server that is displayed next
+    /// to the ping status in the multiplayer menu.
+    /// It can also be manipulated by a Minecraft plugin.
+    /// Hypixel is running on 1.8 to newest version.
+    ///
+    /// Protocol version is a number that represents the version.
+    /// You can find the list of protocol versions here:
+    /// https://wiki.vg/Protocol_version_numbers
+    print(
+        'Hypixel Version: ${pingHypixel.response!.version.name}, Protocol: ${pingHypixel.response!.version.protocol}');
 
-  final skinUrl = skins.first.url;
-  print("Notch's Skin URL: $skinUrl"); // URL to Notch's skin texture.
-
-  /// As we've now got the URL for the texture, we'll write the link to
-  /// it to our previously read nbt file and re-write it to the file.
-  final compound = nbtReader.root!;
-  compound.removeWhere((tag) => tag.name == 'skinUrl');
-  compound.add(NbtString(name: 'skinUrl', value: skinUrl));
-
-  // Here, you can also use NbtCompression to compress the output.
-  await NbtWriter().writeFile('./example/data.nbt', compound);
-  return 0;
+    /// The server count is the amount of players that are currently online
+    /// and slots available.
+    print(
+        'Hypixel Server Count: ${pingHypixel.response!.players.online}/${pingHypixel.response!.players.max}');
+  }
 }
