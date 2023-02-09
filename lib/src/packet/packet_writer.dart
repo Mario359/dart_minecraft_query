@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import '../utilities/readers/_byte_writer.dart';
 import 'packet_compression.dart';
-import 'packet_writer_stub.dart' if (dart.library.io) 'packet_writer_io.dart';
+import 'packet_writer_io.dart';
 import 'packets/server_packet.dart';
 
 /// Writes various different server packets into binary.

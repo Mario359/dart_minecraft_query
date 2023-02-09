@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import '../utilities/readers/_byte_reader.dart';
 import 'packet_compression.dart';
-import 'packet_reader_stub.dart' if (dart.library.io) 'packet_reader_io.dart';
+import 'packet_reader_io.dart';
 import 'packets/server_packet.dart';
 
 /// Reads different server packets from binary into objects.
