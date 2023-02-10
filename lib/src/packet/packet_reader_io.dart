@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:universal_io/io.dart';
+import 'package:archive/archive.dart';
 
 import 'packet_compression.dart';
 import 'packet_reader.dart';
@@ -72,7 +72,7 @@ class IoPacketReader extends PacketReader {
         for (var i = 0; i < size - 1; i++) {
           compressedPayload[i] = readByte(signed: false);
         }
-        payload = zlib.decode(compressedPayload) as Uint8List;
+        payload = ZLibDecoder().decodeBytes(compressedPayload) as Uint8List;
 
         // Reset the read data with our new payload to extract the ID.
         reset(payload);

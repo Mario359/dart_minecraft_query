@@ -1,4 +1,6 @@
-import 'package:universal_io/io.dart';
+import 'dart:io' as dart_io;
+
+import 'package:socket_io_client/socket_io_client.dart' as client_io;
 
 import '../exceptions/ping_exception.dart';
 import '../packet/packet_reader.dart';
@@ -10,10 +12,13 @@ import '../packet/packets/request_packet.dart';
 import '../packet/packets/response_packet.dart';
 import '../packet/packets/server_packet.dart';
 
+//TODO: Switch to socket_io_client for web support
 /// Write a single package
-void _writePacket(Socket socket, ServerPacket packet) async {
+void _writePacket(dart_io.Socket socket, ServerPacket packet) async {
   final packetEncoded = PacketWriter.create().writePacket(packet);
   socket.add(packetEncoded);
+
+  // socket.emit('packet', packetEncoded);
 }
 
 int _now() => DateTime.now().millisecondsSinceEpoch;
@@ -36,21 +41,31 @@ Future<ResponsePacket?> ping(String serverUri,
     ServerPacket.registerClientboundPacket(ResponsePacket());
     ServerPacket.registerClientboundPacket(PongPacket());
 
-    final socket = await Socket.connect(serverUri, port, timeout: timeout);
-    final stream = socket.asBroadcastStream();
+    final socket2 =
+        await dart_io.Socket.connect(serverUri, port, timeout: timeout);
+    final stream = socket2.asBroadcastStream();
+    final socket = client_io.io(
+        '$serverUri:$port',
+        client_io.OptionBuilder()
+            .setTransports(['websocket'])
+            .disableAutoConnect()
+            .build());
 
-    _writePacket(socket, HandshakePacket(serverAddress: serverUri));
-    _writePacket(socket, RequestPacket());
+    // final socket = await iosocket.connect();
+    // convert to broadcast stream
+    // final stream =
+    _writePacket(socket2, HandshakePacket(serverAddress: serverUri));
+    _writePacket(socket2, RequestPacket());
 
     final responsePacket =
         await PacketReader.readPacketFromStream(stream) as ResponsePacket;
 
     final pingPacket = PingPacket(_now());
-    _writePacket(socket, pingPacket);
+    _writePacket(socket2, pingPacket);
     final pongPacket =
         await PacketReader.readPacketFromStream(stream) as PongPacket;
 
-    await socket.close();
+    await socket2.close();
     var ping = pongPacket.value! - pingPacket.value;
 
     /// If the ping is 0, we'll instead use the time it took
@@ -59,9 +74,9 @@ Future<ResponsePacket?> ping(String serverUri,
       ping = _now() - pingPacket.value;
     }
     return responsePacket..ping = ping;
-  } on SocketException {
-    throw PingException('Could not connect to $serverUri');
   } on RangeError {
     throw PingException('Server sent unexpected data');
+  } on Exception catch (error, stackTrace) {
+    throw PingException('Could not connect to $serverUri: $error; $stackTrace');
   }
 }

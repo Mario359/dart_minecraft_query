@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:universal_io/io.dart';
+import 'package:archive/archive.dart';
 
 import '../utilities/readers/_byte_writer.dart';
 import 'packet_compression.dart';
@@ -33,7 +33,8 @@ class IoPacketWriter extends PacketWriter {
         /// - Packet ID (VarInt, compressed)
         /// - Data (Byte Array, compressed)
         final dataLength = bytes.lengthInBytes;
-        bytes = zlib.encode(bytes) as Uint8List;
+        // bytes = zlib.encode(bytes) as Uint8List;
+        bytes = ZLibEncoder().encode(bytes) as Uint8List;
 
         /// Bytes already includes the packet id.
         /// Write the data length as a var-long and then flush
