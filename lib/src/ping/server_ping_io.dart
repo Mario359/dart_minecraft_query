@@ -1,8 +1,8 @@
 import 'dart:io' as dart_io;
+import 'dart:typed_data';
 
 import 'package:socket_io_client/socket_io_client.dart' as client_io;
 
-import '../exceptions/ping_exception.dart';
 import '../packet/packet_reader.dart';
 import '../packet/packet_writer.dart';
 import '../packet/packets/handshake_packet.dart';
@@ -36,47 +36,53 @@ Future<ResponsePacket?> pingUri(String serverUri) async {
 /// default Minecraft server port. This method is for post 1.6 servers.
 Future<ResponsePacket?> ping(String serverUri,
     {int port = 25565, Duration timeout = const Duration(seconds: 30)}) async {
-  try {
-    // Register the packets we will require
-    ServerPacket.registerClientboundPacket(ResponsePacket());
-    ServerPacket.registerClientboundPacket(PongPacket());
+  // Register the packets we will require
+  ServerPacket.registerClientboundPacket(ResponsePacket());
+  ServerPacket.registerClientboundPacket(PongPacket());
 
-    final socket2 =
-        await dart_io.Socket.connect(serverUri, port, timeout: timeout);
-    final stream = socket2.asBroadcastStream();
-    final socket = client_io.io(
+  dart_io.Socket? socket2;
+  client_io.Socket? socket;
+  Stream<Uint8List>? stream;
+
+  try {
+    socket2 = await dart_io.Socket.connect(serverUri, port, timeout: timeout);
+    stream = socket2.asBroadcastStream();
+    socket = client_io.io(
         '$serverUri:$port',
         client_io.OptionBuilder()
             .setTransports(['websocket'])
             .disableAutoConnect()
             .build());
-
-    // final socket = await iosocket.connect();
-    // convert to broadcast stream
-    // final stream =
-    _writePacket(socket2, HandshakePacket(serverAddress: serverUri));
-    _writePacket(socket2, RequestPacket());
-
-    final responsePacket =
-        await PacketReader.readPacketFromStream(stream) as ResponsePacket;
-
-    final pingPacket = PingPacket(_now());
-    _writePacket(socket2, pingPacket);
-    final pongPacket =
-        await PacketReader.readPacketFromStream(stream) as PongPacket;
-
-    await socket2.close();
-    var ping = pongPacket.value! - pingPacket.value;
-
-    /// If the ping is 0, we'll instead use the time it took
-    /// for the server to respond and the packet returning back home.
-    if (ping <= 0) {
-      ping = _now() - pingPacket.value;
-    }
-    return responsePacket..ping = ping;
-  } on RangeError {
-    throw PingException('Server sent unexpected data');
-  } on Exception catch (error, stackTrace) {
-    throw PingException('Could not connect to $serverUri: $error; $stackTrace');
+  } catch (error, stackTrace) {
+    print('Unable to connect to server: $error\n$stackTrace');
   }
+
+  // final socket = await iosocket.connect();
+  // convert to broadcast stream
+  // final stream =
+  if (socket2 == null || stream == null) {
+    await socket2?.close();
+    return null;
+  }
+
+  _writePacket(socket2, HandshakePacket(serverAddress: serverUri));
+  _writePacket(socket2, RequestPacket());
+
+  final responsePacket =
+      await PacketReader.readPacketFromStream(stream) as ResponsePacket;
+
+  final pingPacket = PingPacket(_now());
+  _writePacket(socket2, pingPacket);
+  final pongPacket =
+      await PacketReader.readPacketFromStream(stream) as PongPacket;
+
+  await socket2.close();
+  var ping = pongPacket.value! - pingPacket.value;
+
+  /// If the ping is 0, we'll instead use the time it took
+  /// for the server to respond and the packet returning back home.
+  if (ping <= 0) {
+    ping = _now() - pingPacket.value;
+  }
+  return responsePacket..ping = ping;
 }

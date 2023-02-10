@@ -5,23 +5,16 @@ Future<void> main() async {
   /// Pinging hypixel.net to get the status of the server.
   /// This will return a [ResponsePacket] object which contains
   /// all the information about the server.
-  ResponsePacket? pingHypixel;
-  try {
-    pingHypixel = await ping('mc.hypixel.net', port: 25565);
-  } on PingException catch (error) {
-    /// If the ping failed, we'll print the error message.
-    /// Hypixel may be down for maintenances or rebooting.
-    print('Failed to ping hypixel.net: ${error.message}');
-  }
+  ResponsePacket? pingHypixel = await ping('mc.hypixel.net', port: 25565);
 
   /// If the ping was successful, we'll print the the server informations.
-  if (pingHypixel != null || pingHypixel!.response != null) {
+  if (pingHypixel != null || pingHypixel?.response != null) {
     /// MOTD is the message that is displayed when register the server
     /// in your multiplayer menu.
     /// It includes the two lines of text
     /// It includes color codes, which are represented by the §x symbol.
     /// You may need to replace the color codes symbol with Regex
-    print('Hypixel MOTD:\n${pingHypixel.response!.description.description}');
+    print('Hypixel MOTD:\n${pingHypixel!.response!.description.description}');
 
     /// Player sample is a small list of players that are currently online.
     /// It is the component that displays when you hover over the
@@ -47,5 +40,21 @@ Future<void> main() async {
     /// and slots available.
     print(
         'Hypixel Server Count: ${pingHypixel.response!.players.online}/${pingHypixel.response!.players.max}');
+
+    /// If the ping was unsuccessful, we'll print an error message.
+    /// ping return null if the server can't be reached.
+    /// Some servers may not respond to the ping request.
+    /// 2b2t.org is one of them.
+  } else {
+    print('Unable to ping Hypixel, it may be offline.');
+  }
+
+  /// Another example, pinging 2b2t.org
+  ResponsePacket? ping2b2t = await ping('2b2t.org', port: 25565);
+  if (ping2b2t != null || ping2b2t?.response != null) {
+    print('2b2t has responded to the ping request!');
+  } else {
+    print(
+        'Unable to ping 2b2t, it doesn\'t respond to the ping request due to the anti-bot system or something like that.');
   }
 }

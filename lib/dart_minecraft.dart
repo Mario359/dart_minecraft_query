@@ -1,6 +1,5 @@
 library minecraft;
 
-export 'src/exceptions/ping_exception.dart';
 export 'src/packet/packet_compression.dart';
 export 'src/packet/packet_reader.dart';
 export 'src/packet/packet_writer.dart';
