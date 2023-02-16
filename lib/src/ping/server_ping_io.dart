@@ -1,8 +1,6 @@
 import 'dart:io' as dart_io;
 import 'dart:typed_data';
 
-import 'package:socket_io_client/socket_io_client.dart' as client_io;
-
 import '../packet/packet_reader.dart';
 import '../packet/packet_writer.dart';
 import '../packet/packets/handshake_packet.dart';
@@ -17,8 +15,6 @@ import '../packet/packets/server_packet.dart';
 void _writePacket(dart_io.Socket socket, ServerPacket packet) async {
   final packetEncoded = PacketWriter.create().writePacket(packet);
   socket.add(packetEncoded);
-
-  // socket.emit('packet', packetEncoded);
 }
 
 int _now() => DateTime.now().millisecondsSinceEpoch;
@@ -41,25 +37,16 @@ Future<ResponsePacket?> ping(String serverUri,
   ServerPacket.registerClientboundPacket(PongPacket());
 
   dart_io.Socket? socket2;
-  client_io.Socket? socket;
   Stream<Uint8List>? stream;
 
   try {
     socket2 = await dart_io.Socket.connect(serverUri, port, timeout: timeout);
+    ;
     stream = socket2.asBroadcastStream();
-    socket = client_io.io(
-        '$serverUri:$port',
-        client_io.OptionBuilder()
-            .setTransports(['websocket'])
-            .disableAutoConnect()
-            .build());
-  } catch (error, stackTrace) {
-    print('Unable to connect to server: $error\n$stackTrace');
+  } catch (error) {
+    print('Unable to connect to server: $error');
   }
 
-  // final socket = await iosocket.connect();
-  // convert to broadcast stream
-  // final stream =
   if (socket2 == null || stream == null) {
     await socket2?.close();
     return null;
